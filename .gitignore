@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+passkey.env
+*.env
+!.env.example
+.streamlit/secrets.toml
+_upload_temp/
+receipt_images/
+receipt_images_processed/
+receipt_results*.xlsx
+Main/*.json
+.pytest_cache/
