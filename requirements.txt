@@ -2,5 +2,6 @@ streamlit==1.32.2
 boto3
 google-cloud-documentai
 openpyxl
-pypdf
+pdf2image
+Pillow
 python-dotenv
