@@ -15,7 +15,7 @@ if MAIN_DIR not in sys.path:
     sys.path.insert(0, MAIN_DIR)
 
 import RCQ_main_pipeline  # noqa: E402
-from RCQ_config import APP_PASSWORD, validate_credentials  # noqa: E402
+from RCQ_config import APP_PASSWORD, list_project_xlsx_files, resolve_template_path, validate_credentials  # noqa: E402
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_TEMP_ROOT = os.path.join(APP_DIR, "_upload_temp")
@@ -71,6 +71,19 @@ with st.sidebar:
     st.divider()
     st.caption("Supported formats: PNG, JPG, JPEG, BMP, TIFF, PDF")
 
+    with st.expander("Template status"):
+        template_path = resolve_template_path()
+        if os.path.exists(template_path):
+            st.success(f"Template found:\n`{template_path}`")
+        else:
+            st.warning(f"Template not found at:\n`{template_path}`")
+            xlsx_files = list_project_xlsx_files()
+            if xlsx_files:
+                st.caption("Excel files on server:")
+                st.code("\n".join(xlsx_files))
+            else:
+                st.caption("No .xlsx files found in the project folders.")
+
 uploaded_files = st.file_uploader(
     "Upload receipts",
     type=["png", "jpg", "jpeg", "bmp", "tiff", "tif", "pdf"],
@@ -103,7 +116,7 @@ if process_clicked and uploaded_files:
 
             status.info("Running AWS Textract and Google Document AI — this may take a minute...")
             importlib.reload(RCQ_main_pipeline)
-            results, output_path, excel_bytes = RCQ_main_pipeline.process_uploaded_files(
+            results, output_path, excel_bytes, used_template = RCQ_main_pipeline.process_uploaded_files(
                 saved_files, work_dir
             )
         finally:
@@ -139,6 +152,13 @@ if process_clicked and uploaded_files:
             st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
 
             if excel_bytes:
+                if used_template:
+                    st.caption("Excel exported using your expense reimbursement template.")
+                else:
+                    st.warning(
+                        "Template file not found on the server — a simple Excel was generated instead. "
+                        "Upload `Expense Reimbursement Form (blank).xlsx` to your GitHub repo root."
+                    )
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 download_name = f"receipt_results_{timestamp}.xlsx"
                 st.download_button(
