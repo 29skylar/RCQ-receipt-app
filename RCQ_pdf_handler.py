@@ -3,8 +3,13 @@ import io
 import os
 import re
 
-import fitz  # PyMuPDF
 from PIL import Image
+
+
+def _get_fitz():
+    """Lazy import — PyMuPDF can segfault on some cloud hosts at module import."""
+    import fitz
+    return fitz
 
 
 def _safe_filename(name):
@@ -32,6 +37,7 @@ def expand_pdf_to_pages(filename, pdf_path, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     try:
+        fitz = _get_fitz()
         with open(os.path.abspath(pdf_path), "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -50,6 +56,7 @@ def expand_pdf_to_pages(filename, pdf_path, output_dir):
     entries = []
 
     try:
+        fitz = _get_fitz()
         for page_index in range(page_count):
             page_num = page_index + 1
             single_page_doc = fitz.open()
@@ -80,6 +87,7 @@ def convert_pdf_to_images(pdf_path, output_dir, dpi=300):
     os.makedirs(output_dir, exist_ok=True)
 
     try:
+        fitz = _get_fitz()
         with open(os.path.abspath(pdf_path), "rb") as pdf_file:
             pdf_bytes = pdf_file.read()
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")

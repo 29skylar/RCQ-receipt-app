@@ -14,7 +14,6 @@ MAIN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Main")
 if MAIN_DIR not in sys.path:
     sys.path.insert(0, MAIN_DIR)
 
-import RCQ_main_pipeline  # noqa: E402
 from RCQ_config import APP_PASSWORD, list_project_xlsx_files, resolve_template_path, validate_credentials  # noqa: E402
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -115,6 +114,7 @@ if process_clicked and uploaded_files:
                 )
 
             status.info("Running AWS Textract and Google Document AI — this may take a minute...")
+            import RCQ_main_pipeline
             importlib.reload(RCQ_main_pipeline)
             pipeline_result = RCQ_main_pipeline.process_uploaded_files(saved_files, work_dir)
             results, output_path, excel_bytes, *rest = pipeline_result

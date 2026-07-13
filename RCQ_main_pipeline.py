@@ -15,7 +15,6 @@ from RCQ_aws_engine import (
     categorize_receipt,
 )
 from RCQ_gcp_engine import extract_with_gcp
-from RCQ_pdf_handler import expand_pdf_to_pages
 
 def safe_write(ws, row, column, value):
     """
@@ -177,6 +176,7 @@ def _queue_receipt_file(filename, file_path, pdf_output_dir, files_to_process):
     if lower.endswith(IMAGE_EXTS):
         files_to_process.append((filename, file_path))
     elif lower.endswith(PDF_EXTS):
+        from RCQ_pdf_handler import expand_pdf_to_pages
         files_to_process.extend(expand_pdf_to_pages(filename, file_path, pdf_output_dir))
 
 

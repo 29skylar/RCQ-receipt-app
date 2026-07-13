@@ -3,6 +3,6 @@ google-cloud-documentai
 openpyxl
 pandas
 Pillow
-PyMuPDF
+PyMuPDF==1.24.14
 python-dotenv
-streamlit
+streamlit==1.41.1
