@@ -2,7 +2,6 @@ boto3
 google-cloud-documentai
 openpyxl
 pandas
-Pillow
-PyMuPDF==1.24.14
+pypdf
 python-dotenv
-streamlit==1.41.1
+streamlit==1.39.0
