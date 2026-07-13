@@ -37,6 +37,31 @@ def safe_write(ws, row, column, value):
     target_cell.value = value
     return target_cell
 
+
+TEMPLATE_DATA_START_ROW = 10
+TEMPLATE_DATA_END_ROW = 34
+
+
+def write_template_item_number(ws, row, is_first_row):
+    """Keep the template's auto-numbering formula in column A."""
+    if is_first_row:
+        safe_write(ws, row, 1, 1)
+    else:
+        ws.cell(row=row, column=1).value = f'=1+A{row - 1}'
+
+
+def preserve_template_formulas(ws, row):
+    """Restore currency lookup (K) and HKD equivalent (L) formulas for a data row."""
+    if row < TEMPLATE_DATA_START_ROW or row > TEMPLATE_DATA_END_ROW:
+        return
+
+    currency_cell = ws.cell(row=row, column=9)
+    if not currency_cell.value:
+        currency_cell.value = 'HKD'
+
+    ws.cell(row=row, column=11).value = f'=VLOOKUP(I{row},$I$37:$K$43,3,FALSE)'
+    ws.cell(row=row, column=12).value = f'=J{row}*K{row}'
+
 # ============================================================
 # Helper functions
 # ============================================================
@@ -285,9 +310,13 @@ def build_excel_workbook(results):
 
     if using_template:
         print(f"\nLoading template from {template_path}...")
-        wb = load_workbook(template_path, keep_links=False)
+        wb = load_workbook(template_path, keep_links=True)
         ws = wb.active or wb.worksheets[0]
-        start_row = 10
+        start_row = TEMPLATE_DATA_START_ROW
+        max_rows = TEMPLATE_DATA_END_ROW - start_row + 1
+        if len(results) > max_rows:
+            print(f"   Warning: template supports {max_rows} rows; extra receipts were skipped.")
+            results = results[:max_rows]
     else:
         print(f"\nTemplate not found at {template_path}; using simple export.")
         wb = Workbook()
@@ -301,7 +330,10 @@ def build_excel_workbook(results):
     for idx, row_data in enumerate(results):
         current_row = start_row + idx
 
-        safe_write(ws, current_row, 1, idx + 1)
+        if using_template:
+            write_template_item_number(ws, current_row, idx == 0)
+        else:
+            safe_write(ws, current_row, 1, idx + 1)
 
         date_cell = safe_write(ws, current_row, 2, row_data['Date'])
         if date_cell.value:
@@ -318,6 +350,9 @@ def build_excel_workbook(results):
             amount_cell.number_format = '#,##0.00_);[Red](#,##0.00)'
 
         safe_write(ws, current_row, confidence_col, row_data['Confidence_Flag'])
+
+        if using_template:
+            preserve_template_formulas(ws, current_row)
 
     buffer = BytesIO()
     wb.save(buffer)
