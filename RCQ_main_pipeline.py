@@ -2,7 +2,6 @@
 import os
 import re
 import shutil
-import pandas as pd
 from datetime import datetime
 
 from RCQ_config import INPUT_DIR, OUTPUT_EXCEL_PATH, PROCESSED_DIR, resolve_template_path

@@ -1,17 +1,28 @@
 # RCQ_aws_engine.py
 import re
-import boto3
-from RCQ_config import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 
-if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
-    textract_client = None
-else:
-    textract_client = boto3.client(
+_textract_client = None
+
+
+def _get_textract_client():
+    global _textract_client
+    if _textract_client is not None:
+        return _textract_client
+
+    import boto3
+    from RCQ_config import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, initialize_config
+
+    initialize_config()
+    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+        return None
+
+    _textract_client = boto3.client(
         'textract',
         aws_access_key_id=AWS_ACCESS_KEY_ID,
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION
+        region_name=AWS_REGION,
     )
+    return _textract_client
 
 
 def extract_with_aws(image_path):
@@ -19,6 +30,7 @@ def extract_with_aws(image_path):
     Uses AWS Textract's analyze_expense (purpose-built for receipts).
     Returns a dictionary with store_name, date, total, subtotal.
     """
+    textract_client = _get_textract_client()
     if textract_client is None:
         raise RuntimeError("AWS credentials are not configured.")
     with open(image_path, 'rb') as document:
@@ -157,6 +169,7 @@ def extract_total_by_keyword(image_path):
     AWS-based line-scanner for total keywords.
     Skips subtotal/balance/quantity lines using SKIP_LINE_KEYWORDS.
     """
+    textract_client = _get_textract_client()
     if textract_client is None:
         return ''
 

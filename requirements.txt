@@ -1,7 +1,6 @@
+streamlit==1.32.2
 boto3
 google-cloud-documentai
 openpyxl
-pandas
 pypdf
 python-dotenv
-streamlit==1.39.0

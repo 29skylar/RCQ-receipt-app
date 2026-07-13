@@ -6,24 +6,35 @@ import sys
 import tempfile
 from datetime import datetime
 
-import pandas as pd
 import streamlit as st
-
-# Allow imports from Main/
-MAIN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Main")
-if MAIN_DIR not in sys.path:
-    sys.path.insert(0, MAIN_DIR)
-
-from RCQ_config import APP_PASSWORD, list_project_xlsx_files, resolve_template_path, validate_credentials  # noqa: E402
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_TEMP_ROOT = os.path.join(APP_DIR, "_upload_temp")
 
 st.set_page_config(
     page_title="RCQ — Receipt Capture",
-    page_icon="🧾",
     layout="wide",
 )
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+MAIN_DIR = os.path.join(APP_DIR, "Main")
+UPLOAD_TEMP_ROOT = os.path.join(APP_DIR, "_upload_temp")
+
+
+def _setup_main_path():
+    if MAIN_DIR not in sys.path:
+        sys.path.insert(0, MAIN_DIR)
+
+
+def _load_config():
+    _setup_main_path()
+    from RCQ_config import (  # noqa: WPS433
+        APP_PASSWORD,
+        list_project_xlsx_files,
+        resolve_template_path,
+        validate_credentials,
+    )
+    return APP_PASSWORD, list_project_xlsx_files, resolve_template_path, validate_credentials
+
+
+APP_PASSWORD, list_project_xlsx_files, resolve_template_path, validate_credentials = _load_config()
 
 missing_credentials = validate_credentials()
 if missing_credentials:
@@ -50,7 +61,7 @@ if APP_PASSWORD:
                 st.error("Incorrect password.")
         st.stop()
 
-st.title("🧾 RCQ — Receipt Capture & Query")
+st.title("RCQ — Receipt Capture & Query")
 st.markdown(
     "Upload receipt images or PDFs. The app extracts store name, date, amount, "
     "and category using AWS Textract and Google Document AI, then generates "
@@ -149,7 +160,7 @@ if process_clicked and uploaded_files:
                 })
 
             st.subheader("Extracted data")
-            st.dataframe(pd.DataFrame(display_rows), use_container_width=True, hide_index=True)
+            st.dataframe(display_rows, use_container_width=True, hide_index=True)
 
             if excel_bytes:
                 if used_template:

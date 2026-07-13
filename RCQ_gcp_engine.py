@@ -1,18 +1,21 @@
 # RCQ_gcp_engine.py
 import os
-from google.cloud import documentai_v1 as documentai
-from RCQ_config import (
-    GCP_PROJECT_ID,
-    GCP_LOCATION,
-    GCP_PROCESSOR_ID,
-    GCP_SERVICE_ACCOUNT_INFO,
-)
 
 
 def _get_gcp_client():
+    from google.cloud import documentai_v1 as documentai
+    from google.oauth2 import service_account
+    from RCQ_config import (
+        GCP_PROJECT_ID,
+        GCP_LOCATION,
+        GCP_PROCESSOR_ID,
+        GCP_SERVICE_ACCOUNT_INFO,
+        initialize_config,
+    )
+
+    initialize_config()
     opts = {"api_endpoint": f"{GCP_LOCATION}-documentai.googleapis.com"}
     if GCP_SERVICE_ACCOUNT_INFO:
-        from google.oauth2 import service_account
         credentials = service_account.Credentials.from_service_account_info(
             GCP_SERVICE_ACCOUNT_INFO
         )
@@ -28,6 +31,9 @@ def extract_with_gcp(image_path):
     Uses Google Cloud Document AI Expense Parser.
     Returns a dictionary with store_name, date, total, subtotal.
     """
+    from google.cloud import documentai_v1 as documentai
+    from RCQ_config import GCP_PROJECT_ID, GCP_LOCATION, GCP_PROCESSOR_ID
+
     client = _get_gcp_client()
     name = client.processor_path(GCP_PROJECT_ID, GCP_LOCATION, GCP_PROCESSOR_ID)
 
