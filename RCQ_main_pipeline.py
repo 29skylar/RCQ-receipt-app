@@ -5,7 +5,7 @@ import shutil
 import pandas as pd
 from datetime import datetime
 
-from RCQ_config import INPUT_DIR, OUTPUT_EXCEL_PATH, TEMPLATE_EXCEL_PATH, PROCESSED_DIR
+from RCQ_config import INPUT_DIR, OUTPUT_EXCEL_PATH, PROCESSED_DIR, resolve_template_path
 from RCQ_aws_engine import (
     extract_with_aws,
     extract_total_by_keyword,
@@ -272,7 +272,7 @@ def process_single_receipt(display_name, image_path):
 
 
 def build_excel_workbook(results):
-    """Fill the expense template and return (output_path, excel_bytes)."""
+    """Fill the expense template and return (output_path, excel_bytes, using_template)."""
     from io import BytesIO
     from openpyxl import Workbook, load_workbook
 
@@ -280,13 +280,16 @@ def build_excel_workbook(results):
     base, ext = os.path.splitext(OUTPUT_EXCEL_PATH)
     output_path = f"{base}_{timestamp}{ext}"
 
-    if os.path.exists(TEMPLATE_EXCEL_PATH):
-        print(f"\nLoading template from {TEMPLATE_EXCEL_PATH}...")
-        wb = load_workbook(TEMPLATE_EXCEL_PATH, keep_links=False)
+    template_path = resolve_template_path()
+    using_template = os.path.exists(template_path)
+
+    if using_template:
+        print(f"\nLoading template from {template_path}...")
+        wb = load_workbook(template_path, keep_links=False)
         ws = wb.active or wb.worksheets[0]
         start_row = 10
     else:
-        print(f"\nTemplate not found at {TEMPLATE_EXCEL_PATH}; using simple export.")
+        print(f"\nTemplate not found at {template_path}; using simple export.")
         wb = Workbook()
         ws = wb.worksheets[0]
         ws.title = "Receipts"
@@ -294,8 +297,6 @@ def build_excel_workbook(results):
         for col, header in enumerate(headers, start=1):
             ws.cell(row=1, column=col, value=header)
         start_row = 2
-
-    using_template = os.path.exists(TEMPLATE_EXCEL_PATH)
 
     for idx, row_data in enumerate(results):
         current_row = start_row + idx
@@ -324,7 +325,7 @@ def build_excel_workbook(results):
     wb.save(output_path)
     print(f"Successfully saved formatted results to: {output_path}\n")
 
-    return output_path, excel_bytes
+    return output_path, excel_bytes, using_template
 
 
 def summarize_results(results):
@@ -342,20 +343,20 @@ def process_file_list(files_to_process):
     for display_name, image_path in files_to_process:
         results.append(process_single_receipt(display_name, image_path))
 
-    output_path, excel_bytes = build_excel_workbook(results)
+    output_path, excel_bytes, used_template = build_excel_workbook(results)
     stats = summarize_results(results)
     print(f"   HIGH confidence:   {stats['high']}")
     print(f"   REVIEW needed:     {stats['review']}")
     print(f"   LOW confidence:    {stats['low']}")
 
-    return results, output_path, excel_bytes
+    return results, output_path, excel_bytes, used_template
 
 
 def process_uploaded_files(uploaded_files, work_dir):
     """
     Process Streamlit (or other) uploaded file objects saved under work_dir.
     uploaded_files: list of (original_filename, saved_path) tuples.
-    Returns (results, output_path, excel_bytes).
+    Returns (results, output_path, excel_bytes, used_template).
     """
     pdf_temp_dir = os.path.join(work_dir, '_pdf_pages')
     files_to_process = []
@@ -363,7 +364,7 @@ def process_uploaded_files(uploaded_files, work_dir):
         _queue_receipt_file(filename, saved_path, pdf_temp_dir, files_to_process)
 
     if not files_to_process:
-        return [], None, None
+        return [], None, None, False
 
     return process_file_list(files_to_process)
 
@@ -383,7 +384,7 @@ def process_receipts():
         original_filename = display_name.split(' (page ')[0] if ' (page ' in display_name else display_name
         original_files_seen.add(original_filename)
 
-    output_path, _ = build_excel_workbook(results)
+    output_path, _, _ = build_excel_workbook(results)
     stats = summarize_results(results)
     print(f"   HIGH confidence:   {stats['high']}")
     print(f"   REVIEW needed:     {stats['review']}")

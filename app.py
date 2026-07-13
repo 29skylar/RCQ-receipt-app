@@ -116,9 +116,9 @@ if process_clicked and uploaded_files:
 
             status.info("Running AWS Textract and Google Document AI — this may take a minute...")
             importlib.reload(RCQ_main_pipeline)
-            results, output_path, excel_bytes, used_template = RCQ_main_pipeline.process_uploaded_files(
-                saved_files, work_dir
-            )
+            pipeline_result = RCQ_main_pipeline.process_uploaded_files(saved_files, work_dir)
+            results, output_path, excel_bytes, *rest = pipeline_result
+            used_template = rest[0] if rest else False
         finally:
             shutil.rmtree(work_dir, ignore_errors=True)
 
