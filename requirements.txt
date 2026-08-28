@@ -1,4 +1,4 @@
-grpcio==1.62.3
+streamlit==1.32.2
 boto3
 google-cloud-documentai
 openpyxl
